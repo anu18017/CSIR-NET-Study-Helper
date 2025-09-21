@@ -50,12 +50,12 @@ const QuizGenerator: React.FC = () => {
   }
 
   const getResultColor = (index: number, option: string) => {
-    if (!isSubmitted) return 'border-gray-300 hover:border-primary';
+    if (!isSubmitted) return 'border-gray-300 hover:border-primary text-dark';
     const correctAnswer = quiz?.[index].correctAnswer;
     const userAnswer = userAnswers[index];
-    if (option === correctAnswer) return 'border-green-500 bg-green-100 ring-2 ring-green-500';
-    if (option === userAnswer && option !== correctAnswer) return 'border-red-500 bg-red-100 ring-2 ring-red-500';
-    return 'border-gray-300';
+    if (option === correctAnswer) return 'border-green-500 bg-green-100 ring-2 ring-green-500 text-green-800 font-bold';
+    if (option === userAnswer && option !== correctAnswer) return 'border-red-500 bg-red-100 ring-2 ring-red-500 text-red-800 font-bold';
+    return 'border-gray-300 text-secondary';
   }
   
   const calculateScore = () => {

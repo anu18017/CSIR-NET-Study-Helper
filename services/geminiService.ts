@@ -15,9 +15,7 @@ export const solveDoubt = async (doubt: string): Promise<string> => {
       
       Instructions:
       1. Structure the answer with clear headings, subheadings, and bullet points for maximum readability.
-      2. If a visual diagram, flowchart, or graph would significantly aid understanding, generate the diagram's structure using Mermaid.js syntax.
-      3. Wrap the Mermaid.js syntax in a markdown code block like this: \`\`\`mermaid\n[...mermaid syntax...]\n\`\`\`
-      4. The textual explanation should be comprehensive and clear, standing on its own, with the Mermaid diagram serving as a visual aid.
+      2. The explanation should be comprehensive and clear.
       
       Doubt: "${doubt}"`,
       config: {
@@ -65,7 +63,7 @@ export const generateQuiz = async (text: string, numQuestions: number): Promise<
           options: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
-            description: "An array of 4 possible answers."
+            description: "An array of exactly 4 possible non-empty string answers."
           },
           correctAnswer: {
             type: Type.STRING,
@@ -78,7 +76,7 @@ export const generateQuiz = async (text: string, numQuestions: number): Promise<
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: `Based on the following text, generate a multiple-choice quiz with exactly ${numQuestions} questions. Each question must have exactly 4 options. Ensure the correct answer is one of the options.\n\n---\n${text}\n---`,
+      contents: `Based on the following text, generate a multiple-choice quiz with exactly ${numQuestions} questions. For each question, provide exactly 4 distinct, non-empty options, one of which must be the correct answer. The options should be plausible but clearly distinguishable. Ensure the final output strictly adheres to the provided JSON schema, especially the 'options' array which must contain 4 non-empty string values.\n\n---\n${text}\n---`,
       config: {
         responseMimeType: 'application/json',
         responseSchema: schema,
@@ -88,8 +86,14 @@ export const generateQuiz = async (text: string, numQuestions: number): Promise<
     const jsonText = response.text.trim();
     const quizData = JSON.parse(jsonText) as QuizQuestion[];
 
-    if (!Array.isArray(quizData)) {
-      throw new Error("AI returned an invalid format.");
+    // Validate that the AI returned valid, non-empty options for each question
+    if (!Array.isArray(quizData) || quizData.some(q => 
+        !q.options || 
+        q.options.length < 4 ||
+        q.options.some(opt => typeof opt !== 'string' || !opt.trim())
+    )) {
+      console.error("AI returned data with missing, empty, or insufficient options:", quizData);
+      throw new Error("The AI failed to generate valid, non-empty options for the quiz. Please try again.");
     }
 
     return quizData;
@@ -97,6 +101,9 @@ export const generateQuiz = async (text: string, numQuestions: number): Promise<
     console.error("Error generating quiz:", error);
     if (error instanceof SyntaxError) {
       throw new Error("Failed to generate the quiz due to an invalid format from the AI. Please try again with a different text.");
+    }
+    if (error instanceof Error) {
+        throw error;
     }
     throw new Error("Failed to generate the quiz. Please check the provided text and try again.");
   }

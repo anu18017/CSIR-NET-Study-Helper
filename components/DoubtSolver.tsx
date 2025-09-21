@@ -1,31 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { solveDoubt } from '../services/geminiService';
 import LoadingSpinner from './common/LoadingSpinner';
 import ErrorMessage from './common/ErrorMessage';
 
-declare const mermaid: any;
 declare const jspdf: any;
 declare const html2canvas: any;
 
 const DoubtSolver: React.FC = () => {
   const [doubt, setDoubt] = useState('');
   const [explanation, setExplanation] = useState('');
-  const [diagramCode, setDiagramCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const answerContentRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (diagramCode) {
-      try {
-        mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
-        mermaid.run({ querySelector: '.mermaid' });
-      } catch (e) {
-        console.error("Mermaid rendering error:", e);
-        setError("Failed to render the diagram.");
-      }
-    }
-  }, [diagramCode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,22 +20,10 @@ const DoubtSolver: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setExplanation('');
-    setDiagramCode('');
 
     try {
       const result = await solveDoubt(doubt);
-      
-      const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/;
-      const match = result.match(mermaidRegex);
-
-      if (match && match[1]) {
-        setDiagramCode(match[1]);
-        setExplanation(result.replace(mermaidRegex, '').trim());
-      } else {
-        setExplanation(result);
-        setDiagramCode('');
-      }
-
+      setExplanation(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
     } finally {
@@ -103,7 +77,7 @@ const DoubtSolver: React.FC = () => {
   return (
     <div className="bg-white p-6 sm:p-8 rounded-xl shadow-2xl shadow-pink-100 animate-fade-in">
       <h2 className="text-3xl font-bold text-dark mb-2">CSIR NET Doubt Solver</h2>
-      <p className="text-secondary mb-6">Stuck on a problem? Get detailed explanations and diagrams for any CSIR NET topic.</p>
+      <p className="text-secondary mb-6">Stuck on a problem? Get detailed explanations for any CSIR NET topic.</p>
       
       <form onSubmit={handleSubmit}>
         <textarea
@@ -125,7 +99,7 @@ const DoubtSolver: React.FC = () => {
 
       {error && <div className="mt-6"><ErrorMessage message={error} /></div>}
       
-      {(explanation || diagramCode) && (
+      {explanation && (
         <div className="mt-8">
            <div className="flex justify-between items-center mb-4">
              <h3 className="text-2xl font-bold text-dark">Explanation</h3>
@@ -139,11 +113,6 @@ const DoubtSolver: React.FC = () => {
            </div>
           <div ref={answerContentRef} className="p-6 bg-light border border-pink-100 rounded-lg prose max-w-none">
             <p className="text-gray-800 whitespace-pre-wrap">{explanation}</p>
-            {diagramCode && (
-              <div className="mt-6 flex justify-center p-4 bg-white rounded-md shadow-inner">
-                <div className="mermaid" aria-label="Diagrammatic explanation">{diagramCode}</div>
-              </div>
-            )}
           </div>
         </div>
       )}
